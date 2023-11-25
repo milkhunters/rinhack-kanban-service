@@ -29,6 +29,7 @@ class TaskCreate(BaseModel):
     story_point: int = 0
     start_time: datetime | None = None
     end_time: datetime | None = None
+    executor_id: uuid.UUID | None = None
     column_id: uuid.UUID | None = None
     content: str
 
@@ -105,11 +106,6 @@ class TaskUpdate(BaseModel):
     def story_must_be_valid(cls, value: str):
         if not value:
             raise
-
-        try:
-            int(value)
-        except ValueError:
-            raise ValueError("SP не является числом")
 
         if not (0 <= int(value) <= 5000):
             raise ValueError("SP должен быть в диапазоне от 0 до 5000")
