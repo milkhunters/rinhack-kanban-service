@@ -11,6 +11,7 @@ class Column(BaseModel):
     title: str
     child_id: uuid.UUID | None
     tasks: list[Task] | None
+    wip_limit: int | None
 
     created_at: datetime
     updated_at: datetime | None
@@ -21,6 +22,7 @@ class Column(BaseModel):
 
 class ColumnCreate(BaseModel):
     title: str
+    wip_limit: int | None = None
 
     @field_validator('title')
     def title_must_be_valid(cls, value):
@@ -34,6 +36,7 @@ class ColumnCreate(BaseModel):
 
 class ColumnUpdate(BaseModel):
     title: str = None
+    wip_limit: int | None = None
     child_id: uuid.UUID | None = None
 
     class Config:

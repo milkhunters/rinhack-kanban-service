@@ -11,3 +11,6 @@ from .column import ColumnUpdate
 from .task import Task
 from .task import TaskCreate
 from .task import TaskUpdate
+
+from .tag import Tag
+from .tag import TagCreate

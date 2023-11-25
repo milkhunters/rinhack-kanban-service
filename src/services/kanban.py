@@ -8,7 +8,7 @@ from src.models.auth import BaseUser
 from src.models.state import UserState
 from src.services.auth.filters import state_filter
 from src.services.auth.filters import permission_filter
-from src.services.repository import ColumnRepo
+from src.services.repository import ColumnRepo, TagRepo
 from src.services.repository import TaskRepo
 
 
@@ -19,11 +19,13 @@ class KanbanApplicationService:
             current_user: BaseUser,
             column_repo: ColumnRepo,
             task_repo: TaskRepo,
+            tag_repo: TagRepo,
             is_user_in_project: Callable[[uuid.UUID, uuid.UUID], Coroutine[Any, Any, bool]],
     ):
         self._current_user = current_user
         self._repo = column_repo
         self._task_repo = task_repo
+        self._tag_repo = tag_repo
         self._is_user_in_project = is_user_in_project
 
     @state_filter(UserState.ACTIVE)
@@ -269,3 +271,75 @@ class KanbanApplicationService:
             await self._task_repo.update(pre_task.id, child_id=task.child_id)
 
         await self._task_repo.delete(id=task_id)
+
+    @state_filter(UserState.ACTIVE)
+    @permission_filter(Permission.UPDATE_TASK)
+    async def create_tag(self, project_id: uuid.UUID, data: schemas.TagCreate) -> schemas.Tag:
+        if not await self._is_user_in_project(project_id, self._current_user.id):
+            raise exceptions.AccessDenied("Доступ запрещен")
+
+        _ = await self._tag_repo.get(title=data.title, project_id=project_id)
+        if _:
+            raise exceptions.BadRequest(f"Тег с названием {data.title!r} уже существует")
+
+        tag = await self._tag_repo.create(**data.model_dump(), project_id=project_id)
+        return schemas.Tag.model_validate(tag)
+
+    @state_filter(UserState.ACTIVE)
+    @permission_filter(Permission.UPDATE_TASK)
+    async def delete_tag(self, tag_id: uuid.UUID) -> None:
+        tag = await self._tag_repo.get(id=tag_id)
+        if not tag:
+            raise exceptions.NotFound("Тег не найден")
+
+        if not await self._is_user_in_project(tag.project_id, self._current_user.id):
+            raise exceptions.AccessDenied("Доступ запрещен")
+
+        await self._tag_repo.delete(tag.id)
+
+    @state_filter(UserState.ACTIVE)
+    @permission_filter(Permission.GET_TASK)
+    async def tag_list(self, project_id: uuid.UUID) -> list[schemas.Tag]:
+        if not await self._is_user_in_project(project_id, self._current_user.id):
+            raise exceptions.AccessDenied("Доступ запрещен")
+
+        tags = await self._tag_repo.get_all(project_id=project_id)
+        return [schemas.Tag.model_validate(tag) for tag in tags]
+
+    @state_filter(UserState.ACTIVE)
+    @permission_filter(Permission.UPDATE_TASK)
+    async def set_tag(self, task_id: uuid.UUID, tag_id: uuid.UUID) -> None:
+        task = await self._task_repo.get(id=task_id)
+        if not task:
+            raise exceptions.NotFound("Задача не найдена")
+
+        if not await self._is_user_in_project(task.column.project_id, self._current_user.id):
+            raise exceptions.AccessDenied("Доступ запрещен")
+
+        tag = await self._tag_repo.get(id=tag_id)
+        if not tag:
+            raise exceptions.NotFound("Тег не найден")
+
+        if await self._task_repo.has_tag(task_id=task_id, tag_id=tag_id):
+            raise exceptions.NotFound("Связь уже существует")
+
+        await self._task_repo.add_tag(task_id, tag_id)
+
+    @state_filter(UserState.ACTIVE)
+    @permission_filter(Permission.UPDATE_TASK)
+    async def unset_tag(self, task_id: uuid.UUID, tag_id: uuid.UUID) -> None:
+        task = await self._task_repo.get(id=task_id)
+        if not task:
+            raise exceptions.NotFound("Задача не найдена")
+
+        if not await self._is_user_in_project(task.column.project_id, self._current_user.id):
+            raise exceptions.AccessDenied("Доступ запрещен")
+
+        tag = await self._tag_repo.get(id=tag_id)
+        if not tag:
+            raise exceptions.NotFound("Тег не найден")
+
+        if not await self._task_repo.has_tag(task_id=task_id, tag_id=tag_id):
+            raise exceptions.NotFound("Не найдена связь тега с карточкой")
+
+        await self._task_repo.remove_tag(task_id, tag_id)

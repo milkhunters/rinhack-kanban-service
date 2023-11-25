@@ -1,5 +1,6 @@
 from .column import ColumnRepo
 from .task import TaskRepo
+from .tag import TagRepo
 
 
 class RepoFactory:
@@ -13,3 +14,7 @@ class RepoFactory:
     @property
     def task(self) -> TaskRepo:
         return TaskRepo(self._session)
+
+    @property
+    def tag(self) -> TagRepo:
+        return TagRepo(self._session)
