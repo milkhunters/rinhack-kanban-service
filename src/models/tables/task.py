@@ -20,6 +20,7 @@ class Task(Base):
     story_point = SAColumn(INT, nullable=False)
     start_time = SAColumn(DateTime(timezone=True), nullable=True)
     end_time = SAColumn(DateTime(timezone=True), nullable=True)
+    executor_id = SAColumn(UUID(as_uuid=True), nullable=True)
     column_id = SAColumn(UUID(as_uuid=True), ForeignKey('columns.id', ondelete='CASCADE'), nullable=False)
     column = relationship("models.tables.column.Column", back_populates="tasks")
     child_id = SAColumn(UUID(as_uuid=True), nullable=True)

@@ -12,6 +12,7 @@ class Task(BaseModel):
     story_point: int
     start_time: datetime | None
     end_time: datetime | None
+    executor_id: uuid.UUID | None
     column_id: uuid.UUID
     child_id: uuid.UUID | None
 
@@ -28,6 +29,7 @@ class TaskCreate(BaseModel):
     story_point: int = 0
     start_time: datetime | None = None
     end_time: datetime | None = None
+    column_id: uuid.UUID | None = None
     content: str
 
     class Config:
@@ -83,6 +85,7 @@ class TaskUpdate(BaseModel):
     story_point: int = None
     start_time: datetime | None = None
     end_time: datetime | None = None
+    executor_id: uuid.UUID | None = None
     column_id: uuid.UUID = None
     child_id: uuid.UUID | None = None
 
