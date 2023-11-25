@@ -74,9 +74,33 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
-        #  TODO: Обновить порядок колонок
+        # Обновить порядок колонок
+        if column.child_id != data.child_id:
 
-        await self._repo.update(column_id, **data.model_dump(exclude_unset=True))  #  TODO: проверить исключение полей при none для child
+            # Дочерняя колонка может быть либо None, либо валидным Column
+            new_child_id = data.child_id
+            if new_child_id:
+                child_column = await self._repo.get(id=new_child_id)
+                if not child_column:
+                    raise exceptions.NotFound("Дочерняя колонка не найдена")
+
+                if child_column.project_id != column.project_id:
+                    raise exceptions.BadRequest("Дочерняя колонка не принадлежит данному проекту")
+
+            parent_column = await self._repo.get(child_id=column_id)
+            if parent_column:
+                await self._repo.update(parent_column.id, child_id=column.child_id)
+
+            # Может быть null
+            if new_child_id:
+                new_parent_column = await self._repo.get(child_id=new_child_id)
+            else:
+                new_parent_column = await self._repo.get(child_id=None)
+
+            if new_parent_column:
+                await self._repo.update(new_parent_column.id, child_id=column_id)
+
+        await self._repo.update(column_id, **data.model_dump())
 
     @state_filter(UserState.ACTIVE)
     @permission_filter(Permission.DELETE_COLUMN)
