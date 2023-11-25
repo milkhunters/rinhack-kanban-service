@@ -7,6 +7,7 @@ from datetime import datetime
 class Task(BaseModel):
     id: uuid.UUID
     title: str
+    color: str
     content: str | None
     column_id: uuid.UUID
     child_id: uuid.UUID | None
@@ -20,6 +21,7 @@ class Task(BaseModel):
 
 class TaskCreate(BaseModel):
     title: str
+    color: str = "#8DA2DB"
     content: str
 
     class Config:
@@ -34,6 +36,15 @@ class TaskCreate(BaseModel):
             raise ValueError("Заголовок не может содержать больше 64 символов")
         return value
 
+    @field_validator('color')
+    def color_must_be_valid(cls, value: str):
+        if not value:
+            return
+
+        if len(value) != 7 or not value.startswith("#"):
+            raise ValueError("Значение цвета некорректно!")
+        return value
+
     @field_validator('content')
     def content_must_be_valid(cls, value):
         if not value:
@@ -46,9 +57,10 @@ class TaskCreate(BaseModel):
 
 class TaskUpdate(BaseModel):
     title: str = None
+    color: str = None
     content: str = None
     column_id: uuid.UUID = None
-    child_id: uuid.UUID = None
+    child_id: uuid.UUID | None = None
 
     class Config:
         extra = 'ignore'
@@ -60,6 +72,15 @@ class TaskUpdate(BaseModel):
 
         if len(value) > 64:
             raise ValueError("Заголовок не может содержать больше 64 символов")
+        return value
+
+    @field_validator('color')
+    def color_must_be_valid(cls, value: str):
+        if not value:
+            return
+
+        if len(value) != 7 or not value.startswith("#"):
+            raise ValueError("Значение цвета некорректно!")
         return value
 
     @field_validator('content')

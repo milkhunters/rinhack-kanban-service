@@ -16,6 +16,7 @@ class Task(Base):
     id = SAColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = SAColumn(VARCHAR(64), nullable=False)
     content = SAColumn(VARCHAR(10000), nullable=True)
+    color = SAColumn(VARCHAR(7), nullable=False)
     column_id = SAColumn(UUID(as_uuid=True), ForeignKey('columns.id', ondelete='CASCADE'), nullable=False)
     column = relationship("models.tables.column.Column", back_populates="tasks")
     child_id = SAColumn(UUID(as_uuid=True), nullable=True)

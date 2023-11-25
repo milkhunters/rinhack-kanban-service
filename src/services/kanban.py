@@ -166,16 +166,92 @@ class KanbanApplicationService:
     @state_filter(UserState.ACTIVE)
     @permission_filter(Permission.UPDATE_TASK)
     async def update_task(self, task_id: uuid.UUID, data: schemas.TaskUpdate) -> None:
-        task = await self._repo.get(id=task_id)
+        task = await self._task_repo.get(id=task_id)
         if not task:
             raise exceptions.NotFound("Задача не найдена")
 
         if not await self._is_user_in_project(task.column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
-        #  TODO: Обновить порядок колонок
+        if data.column_id:
+            new_column = await self._repo.get(id=data.column_id)
+            if not new_column:
+                raise exceptions.NotFound("Новая колонка не найдена")
 
-        await self._task_repo.update(task_id, **data.model_dump(exclude_unset=True))
+            if not await self._is_user_in_project(new_column.project_id, self._current_user.id):
+                raise exceptions.AccessDenied("Доступ к указанной колонке запрещен")
+
+        # Обновить порядок задач
+        if (not data.column_id or task.column_id == data.column_id) and task.child_id != data.child_id:
+
+            # Дочерняя колонка может быть либо None, либо валидным Column
+            new_child_id = data.child_id
+            if new_child_id:
+                child_task = await self._task_repo.get(id=new_child_id)
+                if not child_task:
+                    raise exceptions.NotFound("Дочерняя карточка не найдена")
+
+                if child_task.column.project_id != task.column.project_id:
+                    raise exceptions.BadRequest("Дочерняя карточка не принадлежит данному проекту")
+
+            parent_task = await self._task_repo.get(child_id=task_id)
+            if parent_task:
+                await self._task_repo.update(parent_task.id, child_id=task.child_id)
+
+            # Может быть null
+            if new_child_id:
+                new_parent_task = await self._task_repo.get(child_id=new_child_id)
+            else:
+                new_parent_task = await self._task_repo.get(child_id=None)
+
+            if new_parent_task:
+                await self._task_repo.update(new_parent_task.id, child_id=task_id)
+
+        elif data.column_id and task.column_id != data.column_id:
+            # Удаление задачи из колонки
+            pre_task = await self._task_repo.get(child_id=task_id)
+            if pre_task:
+                await self._task_repo.update(pre_task.id, child_id=task.child_id)
+
+            await self._task_repo.delete(id=task_id)
+
+            # Создание задачи в новой колонке
+            last_task = await self._task_repo.get(child_id=None, column_id=data.column_id)
+            task = await self._task_repo.create(
+                **schemas.Task.model_validate(task).model_dump(
+                    exclude={"column_id", "child_id"}
+                ),
+                column_id=data.column_id,
+                child_id=None
+            )
+
+            if last_task:
+                await self._task_repo.update(last_task.id, child_id=task.id)
+
+            # Перемещение в новой колонке
+            new_child_id = data.child_id
+            if new_child_id:
+                child_task = await self._task_repo.get(id=new_child_id)
+                if not child_task:
+                    raise exceptions.NotFound("Дочерняя карточка не найдена")
+
+                if child_task.column.project_id != task.column.project_id:
+                    raise exceptions.BadRequest("Дочерняя карточка не принадлежит данному проекту")
+
+            parent_task = await self._task_repo.get(child_id=task_id)
+            if parent_task:
+                await self._task_repo.update(parent_task.id, child_id=task.child_id)
+
+            # Может быть null
+            if new_child_id:
+                new_parent_task = await self._task_repo.get(child_id=new_child_id)
+            else:
+                new_parent_task = await self._task_repo.get(child_id=None)
+
+            if new_parent_task:
+                await self._task_repo.update(new_parent_task.id, child_id=task_id)
+
+        return await self._task_repo.update(task_id, **data.model_dump(exclude_unset=True))
 
     @state_filter(UserState.ACTIVE)
     @permission_filter(Permission.DELETE_TASK)
@@ -193,4 +269,3 @@ class KanbanApplicationService:
             await self._task_repo.update(pre_task.id, child_id=task.child_id)
 
         await self._task_repo.delete(id=task_id)
-
