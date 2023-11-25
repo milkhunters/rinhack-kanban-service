@@ -10,6 +10,8 @@ class Task(BaseModel):
     color: str
     content: str | None
     story_point: int
+    start_time: datetime | None
+    end_time: datetime | None
     column_id: uuid.UUID
     child_id: uuid.UUID | None
 
@@ -24,6 +26,8 @@ class TaskCreate(BaseModel):
     title: str
     color: str = "#8DA2DB"
     story_point: int = 0
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     content: str
 
     class Config:
@@ -77,6 +81,8 @@ class TaskUpdate(BaseModel):
     color: str = None
     content: str = None
     story_point: int = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     column_id: uuid.UUID = None
     child_id: uuid.UUID | None = None
 

@@ -18,6 +18,8 @@ class Task(Base):
     content = SAColumn(VARCHAR(10000), nullable=True)
     color = SAColumn(VARCHAR(7), nullable=False)
     story_point = SAColumn(INT, nullable=False)
+    start_time = SAColumn(DateTime(timezone=True), nullable=True)
+    end_time = SAColumn(DateTime(timezone=True), nullable=True)
     column_id = SAColumn(UUID(as_uuid=True), ForeignKey('columns.id', ondelete='CASCADE'), nullable=False)
     column = relationship("models.tables.column.Column", back_populates="tasks")
     child_id = SAColumn(UUID(as_uuid=True), nullable=True)
