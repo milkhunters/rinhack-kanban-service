@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import UUID, VARCHAR, DateTime, func
+from sqlalchemy import UUID, VARCHAR, DateTime, func, INT
 from sqlalchemy import Column as SAColumn
 from sqlalchemy.orm import relationship
 
@@ -17,6 +17,7 @@ class Column(Base):
     title = SAColumn(VARCHAR(64), nullable=False)
     project_id = SAColumn(UUID(as_uuid=True), nullable=False)
     tasks = relationship("models.tables.task.Task", back_populates="column")
+    wip_limit = SAColumn(INT, nullable=True)
     child_id = SAColumn(UUID(as_uuid=True), nullable=True)
 
     created_at = SAColumn(DateTime(timezone=True), server_default=func.now())
