@@ -3,12 +3,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
+from .task import Task
+
 
 class Column(BaseModel):
     id: uuid.UUID
     title: str
     child_id: uuid.UUID | None
-    tasks: list[uuid.UUID] | None
+    tasks: list[Task] | None
 
     created_at: datetime
     updated_at: datetime | None
