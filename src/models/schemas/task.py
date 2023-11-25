@@ -9,6 +9,7 @@ class Task(BaseModel):
     title: str
     color: str
     content: str | None
+    story_point: int
     column_id: uuid.UUID
     child_id: uuid.UUID | None
 
@@ -22,6 +23,7 @@ class Task(BaseModel):
 class TaskCreate(BaseModel):
     title: str
     color: str = "#8DA2DB"
+    story_point: int = 0
     content: str
 
     class Config:
@@ -36,10 +38,25 @@ class TaskCreate(BaseModel):
             raise ValueError("Заголовок не может содержать больше 64 символов")
         return value
 
+    @field_validator('story_point')
+    def story_must_be_valid(cls, value: str):
+        if not value:
+            raise ValueError("SP не может быть пустым")
+
+        try:
+            int(value)
+        except ValueError:
+            raise ValueError("SP не является числом")
+
+        if not (0 <= int(value) <= 5000):
+            raise ValueError("SP должен быть в диапазоне от 0 до 5000")
+
+        return value
+
     @field_validator('color')
     def color_must_be_valid(cls, value: str):
         if not value:
-            return
+            raise ValueError("Значение цвета не может быть пустым!")
 
         if len(value) != 7 or not value.startswith("#"):
             raise ValueError("Значение цвета некорректно!")
@@ -59,6 +76,7 @@ class TaskUpdate(BaseModel):
     title: str = None
     color: str = None
     content: str = None
+    story_point: int = None
     column_id: uuid.UUID = None
     child_id: uuid.UUID | None = None
 
@@ -72,6 +90,21 @@ class TaskUpdate(BaseModel):
 
         if len(value) > 64:
             raise ValueError("Заголовок не может содержать больше 64 символов")
+        return value
+
+    @field_validator('story_point')
+    def story_must_be_valid(cls, value: str):
+        if not value:
+            raise
+
+        try:
+            int(value)
+        except ValueError:
+            raise ValueError("SP не является числом")
+
+        if not (0 <= int(value) <= 5000):
+            raise ValueError("SP должен быть в диапазоне от 0 до 5000")
+
         return value
 
     @field_validator('color')
