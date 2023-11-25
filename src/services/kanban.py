@@ -32,7 +32,7 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
-        columns = await self._repo.get_all(project_id=project_id)  # todo: вложенность
+        columns = await self._repo.get_all(project_id=project_id)
         return [schemas.Column.model_validate(column) for column in columns]
 
     @state_filter(UserState.ACTIVE)
@@ -54,7 +54,14 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
+        last_column = await self._repo.get(child_id=None, project_id=project_id)
         column = await self._repo.create(**data.model_dump(), project_id=project_id)
+
+        if last_column:
+            await self._repo.update(last_column.id, child_id=column.id)
+
+        # Task preloading
+        column = await self._repo.get(id=column.id)
         return schemas.Column.model_validate(column)
 
     @state_filter(UserState.ACTIVE)
@@ -119,7 +126,12 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
+        last_task = await self._task_repo.get(child_id=None, column_id=column_id)
         task = await self._task_repo.create(**data.model_dump(), column_id=column_id)
+
+        if last_task:
+            await self._task_repo.update(last_task.id, child_id=task.id)
+
         return schemas.Task.model_validate(task)
 
     @state_filter(UserState.ACTIVE)
