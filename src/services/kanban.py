@@ -3,11 +3,11 @@ from typing import Callable, Coroutine, Any
 
 from src import exceptions
 from src.models import schemas
-from src.models.permission import Permission
 from src.models.auth import BaseUser
+from src.models.permission import Permission
 from src.models.state import UserState
-from src.services.auth.filters import state_filter
 from src.services.auth.filters import permission_filter
+from src.services.auth.filters import state_filter
 from src.services.repository import ColumnRepo, TagRepo
 from src.services.repository import TaskRepo
 
@@ -34,8 +34,45 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
-        columns = await self._repo.get_all(project_id=project_id)
-        return [schemas.Column.model_validate(column) for column in columns]
+        _ = await self._repo.get_all(project_id=project_id)
+        columns = [schemas.Column.model_validate(column) for column in _]
+        # Сортировка задач колонок
+        for column in columns:
+            task_ids = {el.id for el in column.tasks}
+            task_child_ids = {el.child_id for el in column.tasks}
+            result = list(task_ids - task_child_ids)
+
+            if not result:
+                continue
+
+            sorted_tasks = []
+            current_task = [el for el in column.tasks if el.id == result[0]][0]
+            while True:
+                sorted_tasks.append(current_task)
+                searched = [el for el in column.tasks if el.id == current_task.child_id]
+                if searched:
+                    current_task = searched[0]
+                    continue
+                break
+            column.tasks = sorted_tasks
+
+        # Сортировка колонок
+        column_ids = {el.id for el in columns}
+        column_child_ids = {el.child_id for el in columns}
+        result = list(column_ids - column_child_ids)
+
+        if result:
+            sorted_columns = []
+            current_column = [el for el in columns if el.id == result[0]][0]
+            while True:
+                sorted_columns.append(current_column)
+                searched = [el for el in columns if el.id == current_column.child_id]
+                if searched:
+                    current_column = searched[0]
+                    continue
+                break
+            columns = sorted_columns
+        return columns
 
     @state_filter(UserState.ACTIVE)
     @permission_filter(Permission.GET_COLUMN)
@@ -46,6 +83,23 @@ class KanbanApplicationService:
 
         if not await self._is_user_in_project(column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
+
+        # Сортировка
+        task_ids = {el.id for el in column.tasks}
+        task_child_ids = {el.child_id for el in column.tasks}
+        result = list(task_ids - task_child_ids)
+
+        if result:
+            sorted_tasks = []
+            current_task = [el for el in column.tasks if el.id == result[0]][0]
+            while True:
+                sorted_tasks.append(current_task)
+                searched = [el for el in column.tasks if el.id == current_task.child_id]
+                if searched:
+                    current_task = searched[0]
+                    continue
+                break
+            column.tasks = sorted_tasks
 
         return schemas.Column.model_validate(column)
 
@@ -131,9 +185,25 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
-        # Todo: сортировка
-        tasks = await self._task_repo.get_all(column_id=column_id)
-        return [schemas.Task.model_validate(task) for task in tasks]
+        column = schemas.Column.model_validate(column)
+
+        # Сортировка
+        task_ids = {el.id for el in column.tasks}
+        task_child_ids = {el.child_id for el in column.tasks}
+        result = list(task_ids - task_child_ids)
+
+        if result:
+            sorted_tasks = []
+            current_task = [el for el in column.tasks if el.id == result[0]][0]
+            while True:
+                sorted_tasks.append(current_task)
+                searched = [el for el in column.tasks if el.id == current_task.child_id]
+                if searched:
+                    current_task = searched[0]
+                    continue
+                break
+            column.tasks = sorted_tasks
+        return column.tasks
 
     @state_filter(UserState.ACTIVE)
     @permission_filter(Permission.GET_TASK)
