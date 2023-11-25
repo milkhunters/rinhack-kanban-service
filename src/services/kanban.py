@@ -88,6 +88,11 @@ class KanbanApplicationService:
         if not await self._is_user_in_project(column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
 
+        pre_column = await self._repo.get(child_id=column_id)
+
+        if pre_column:
+            await self._repo.update(pre_column.id, child_id=column.child_id)
+
         await self._repo.delete(id=column_id)
 
     @state_filter(UserState.ACTIVE)
@@ -157,6 +162,11 @@ class KanbanApplicationService:
 
         if not await self._is_user_in_project(task.column.project_id, self._current_user.id):
             raise exceptions.AccessDenied("Доступ запрещен")
+
+        pre_task = await self._task_repo.get(child_id=task_id)
+
+        if pre_task:
+            await self._task_repo.update(pre_task.id, child_id=task.child_id)
 
         await self._task_repo.delete(id=task_id)
 
