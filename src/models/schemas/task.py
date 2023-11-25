@@ -3,6 +3,8 @@ import uuid
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 
+from .tag import Tag
+
 
 class Task(BaseModel):
     id: uuid.UUID
@@ -15,6 +17,7 @@ class Task(BaseModel):
     executor_id: uuid.UUID | None
     column_id: uuid.UUID
     child_id: uuid.UUID | None
+    tags: list[Tag] | None
 
     created_at: datetime
     updated_at: datetime | None
@@ -30,8 +33,7 @@ class TaskCreate(BaseModel):
     start_time: datetime | None = None
     end_time: datetime | None = None
     executor_id: uuid.UUID | None = None
-    column_id: uuid.UUID | None = None
-    content: str
+    content: str | None = None
 
     class Config:
         extra = 'ignore'
@@ -49,11 +51,6 @@ class TaskCreate(BaseModel):
     def story_must_be_valid(cls, value: str):
         if not value:
             raise ValueError("SP не может быть пустым")
-
-        try:
-            int(value)
-        except ValueError:
-            raise ValueError("SP не является числом")
 
         if not (0 <= int(value) <= 5000):
             raise ValueError("SP должен быть в диапазоне от 0 до 5000")
@@ -82,7 +79,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str = None
     color: str = None
-    content: str = None
+    content: str | None = None
     story_point: int = None
     start_time: datetime | None = None
     end_time: datetime | None = None

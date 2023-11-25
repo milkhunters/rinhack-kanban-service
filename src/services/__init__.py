@@ -26,6 +26,7 @@ class ServiceFactory:
             self._current_user,
             column_repo=self._repo.column,
             task_repo=self._repo.task,
+            tag_repo=self._repo.tag,
             is_user_in_project=lambda project_id, user_id: is_user_in_project(
                 project_id=project_id,
                 user_id=user_id,

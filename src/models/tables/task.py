@@ -23,10 +23,25 @@ class Task(Base):
     executor_id = SAColumn(UUID(as_uuid=True), nullable=True)
     column_id = SAColumn(UUID(as_uuid=True), ForeignKey('columns.id', ondelete='CASCADE'), nullable=False)
     column = relationship("models.tables.column.Column", back_populates="tasks")
+    tags = relationship('models.tables.tag.Tag', secondary='task_tags', back_populates='tasks')
     child_id = SAColumn(UUID(as_uuid=True), nullable=True)
 
     created_at = SAColumn(DateTime(timezone=True), server_default=func.now())
     updated_at = SAColumn(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
+
+
+class TaskTag(Base):
+    """
+    Many-to-many table for Task and Tag
+    """
+    __tablename__ = "task_tags"
+
+    id = SAColumn(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id = SAColumn(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    tag_id = SAColumn(UUID(as_uuid=True), ForeignKey("tags.id", ondelete="CASCADE"), nullable=False)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self.id}>'

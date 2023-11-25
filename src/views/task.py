@@ -8,3 +8,11 @@ class TaskResponse(BaseView):
 
 class TasksResponse(BaseView):
     content: list[schemas.Task]
+
+
+class TagResponse(BaseView):
+    content: schemas.Tag
+
+
+class TagsResponse(BaseView):
+    content: list[schemas.Tag]
