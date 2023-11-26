@@ -126,3 +126,8 @@ class TaskUpdate(BaseModel):
         if len(value) > 10000:
             raise ValueError("Содержание не может быть больше 10000 символов")
         return value
+
+
+class TaskCountStat(BaseModel):
+    status: str
+    count: int
