@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select, insert, delete
+from sqlalchemy import select, insert, delete, func
 from sqlalchemy.orm import subqueryload
 
 from src.models import tables
@@ -37,3 +37,38 @@ class TaskRepo(BaseRepository[tables.Task]):
         return (await self.session.execute(select(self.table).filter_by(id=model.id).options(
             subqueryload(self.table.tags)
         ))).scalars().first()
+
+    async def active_count(self, project_id: uuid.UUID) -> int:
+        stmt = select(func.count(self.table.id)).join(
+            tables.Column
+        ).where(
+            tables.Column.project_id == project_id
+        ).where(
+            self.table.end_time.is_(None)
+        ).where(
+            self.table.start_time.isnot(None)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def done_count(self, project_id: uuid.UUID) -> int:
+        stmt = select(func.count(self.table.id)).join(
+            tables.Column
+        ).where(
+            tables.Column.project_id == project_id
+        ).where(
+            self.table.end_time.isnot(None)
+        ).where(
+            self.table.start_time.isnot(None)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def all_count(self, project_id):
+        stmt = select(func.count(self.table.id)).join(
+            tables.Column
+        ).where(
+            tables.Column.project_id == project_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one()

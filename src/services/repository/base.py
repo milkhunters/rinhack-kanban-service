@@ -39,7 +39,7 @@ class BaseRepository(Generic[T]):
             offset: int = 0,
             order_by: str = "id",
             **kwargs
-    ) -> list[Optional[T]]:
+    ) -> list[T]:
         """
         Получает все записи
 

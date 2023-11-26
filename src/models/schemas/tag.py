@@ -28,3 +28,8 @@ class TagCreate(BaseModel):
         if len(value) > 32:
             raise ValueError("Тег не может содержать больше 32 символов")
         return value
+
+
+class TagStat(BaseModel):
+    title: str
+    count: int

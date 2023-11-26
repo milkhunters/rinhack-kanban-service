@@ -1,8 +1,11 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from fastapi import status as http_status
 
 from src.dependencies.services import get_services
 from src.services import ServiceFactory
+from src.views.stats import TagStatResponse, TaskCountStatResponse
 
 router = APIRouter()
 
@@ -20,3 +23,27 @@ async def version(details: bool = False, services: ServiceFactory = Depends(get_
 @router.get("/ping", response_model=str, status_code=http_status.HTTP_200_OK)
 def ping():
     return "pong"
+
+
+@router.get("/stats/tag", response_model=TagStatResponse, status_code=http_status.HTTP_200_OK)
+async def tag_stat(project_id: UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить статистику по тегам проекта
+
+    Требуемое состояние: Active
+
+    Требуемые права доступа: GET_TASK
+    """
+    return TagStatResponse(content=await services.stats.get_tag_stat(project_id))
+
+
+@router.get("/stats/task/count", response_model=TaskCountStatResponse, status_code=http_status.HTTP_200_OK)
+async def tag_stat(project_id: UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить статистику по задачам проекта
+
+    Требуемое состояние: Active
+
+    Требуемые права доступа: GET_TASK
+    """
+    return TaskCountStatResponse(content=await services.stats.get_task_stat(project_id))

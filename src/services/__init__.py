@@ -39,7 +39,20 @@ class ServiceFactory:
 
     @property
     def stats(self) -> StatsApplicationService:
-        return StatsApplicationService(config=self._config)
+        return StatsApplicationService(
+            current_user=self._current_user,
+            config=self._config,
+            tag_repo=self._repo.tag,
+            task_repo=self._repo.task,
+            is_user_in_project=lambda project_id, user_id: is_user_in_project(
+                project_id=project_id,
+                user_id=user_id,
+                project_service_conn=(
+                    self._config.PROJECT_SERVICE_GRPC.HOST,
+                    self._config.PROJECT_SERVICE_GRPC.PORT,
+                ),
+            ),
+        )
 
     @property
     def permission(self) -> PermissionApplicationService:
