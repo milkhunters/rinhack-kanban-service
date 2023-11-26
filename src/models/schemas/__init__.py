@@ -14,3 +14,4 @@ from .task import TaskUpdate
 
 from .tag import Tag
 from .tag import TagCreate
+from .tag import TagStat
